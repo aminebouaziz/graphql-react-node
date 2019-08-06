@@ -2,6 +2,9 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const grapQlHttp = require("express-graphql");
 const { buildSchema } = require("graphql");
+const mongoose = require("mongoose");
+
+const Event = require("./models/Event");
 
 const app = express();
 
@@ -40,22 +43,47 @@ app.use(
   `),
     rootValue: {
       events: () => {
-        return events;
+        return Event.find()
+          .then(events => {
+            return events.map(event => {
+              return { ...event._doc };
+            });
+          })
+          .catch(err => {
+            console.log(err);
+          });
       },
       createEvent: args => {
-        const event = {
-          _id: Math.random().toString(),
+        const event = new Event({
           title: args.eventInput.title,
           description: args.eventInput.description,
           price: +args.eventInput.price,
-          date: args.eventInput.date
-        };
-        events.push(event);
-        return event;
+          date: new Date(args.eventInput.date)
+        });
+        return event
+          .save()
+          .then(result => {
+            console.log(result);
+            return { ...result._doc };
+          })
+          .catch(err => {
+            console.log(err);
+            throw err;
+          });
       }
     },
     graphiql: true
   })
 );
 
-app.listen(3000);
+//DB config
+const db = "mongodb://localhost:27017/graphqltest";
+mongoose
+  .connect(db)
+  .then(() => {
+    console.log("mongo connected");
+    app.listen(3000);
+  })
+  .catch(err => {
+    console.log(err);
+  });
