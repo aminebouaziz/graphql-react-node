@@ -5,7 +5,10 @@ const { dateToString } = require("../../helpers/date");
 const { user, singleEvent } = require("./merge");
 
 module.exports = {
-  bookings: () => {
+  bookings: (args, req) => {
+    if (!req.isAuth) {
+      throw new Error("You need to auth");
+    }
     return Booking.find()
       .then(bookings => {
         return bookings.map(booking => {
@@ -46,11 +49,14 @@ module.exports = {
 
       .catch(err => console.log(err));
   },
-  bookEvent: async args => {
+  bookEvent: async (args, req) => {
+    if (!req.isAuth) {
+      throw new Error("You need to auth");
+    }
     const fetchedEvent = await Event.findOne({ _id: args.eventId });
     console.log(fetchedEvent);
     const booking = new Booking({
-      user: "5d551b933070d02bfcc298f3",
+      user: req.userId,
       event: fetchedEvent
     });
     return booking
@@ -66,7 +72,10 @@ module.exports = {
       })
       .catch(err => console.log(err));
   },
-  cancelBooking: async args => {
+  cancelBooking: async (args, req) => {
+    if (!req.isAuth) {
+      throw new Error("You need to auth");
+    }
     try {
       const booking = await Booking.findById(args.bookingId).populate("event");
       console.log(booking);
